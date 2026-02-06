@@ -51,6 +51,11 @@ app.get('/test-db', async (req, res) => {
     }
 });
 
+// 404 handler - must be before error handling middleware
+app.use((req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -58,11 +63,6 @@ app.use((err, req, res, next) => {
         error: 'Something went wrong!', 
         message: err.message 
     });
-});
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found' });
 });
 
 app.listen(PORT, () => {
