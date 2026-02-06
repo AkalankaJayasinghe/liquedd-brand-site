@@ -52,12 +52,17 @@ app.get('/test-db', async (req, res) => {
 });
 
 // 404 handler - must be before error handling middleware
-app.use((req, res) => {
+app.use((req, res, next) => {
     res.status(404).json({ error: 'Route not found' });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+    // Don't send response if headers already sent
+    if (res.headersSent) {
+        return next(err);
+    }
+    
     console.error(err.stack);
     res.status(err.status || 500).json({ 
         error: 'Something went wrong!', 
