@@ -52,7 +52,7 @@ app.get('/test-db', async (req, res) => {
 });
 
 // 404 handler - must be before error handling middleware
-app.use((req, res, next) => {
+app.use((req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
 
@@ -64,10 +64,10 @@ app.use((err, req, res, next) => {
     }
     
     console.error(err.stack);
-    res.status(err.status || 500).json({ 
-        error: 'Something went wrong!', 
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-    });
+    const statusCode = err.status || 500;
+    const message = process.env.NODE_ENV === 'development' ? err.message : 'Internal server error';
+    
+    res.status(statusCode).json({ error: message });
 });
 
 app.listen(PORT, () => {
