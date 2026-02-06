@@ -123,10 +123,47 @@ const Products = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Brand categories with Sri Lankan and international brands
+  const brandsList = [
+    { id: 'all', name: 'All Brands', country: 'all', initials: 'ALL' },
+    // Sri Lankan Brands
+    { id: 'ceylon-spirits', name: 'Ceylon Spirits', country: 'sri-lanka', initials: 'CS' },
+    { id: 'rockland', name: 'Rockland', country: 'sri-lanka', initials: 'RL' },
+    { id: 'old-arrack', name: 'Old Arrack', country: 'sri-lanka', initials: 'OA' },
+    { id: 'dcsl', name: 'DCSL', country: 'sri-lanka', initials: 'DC' },
+    { id: 'idl', name: 'IDL', country: 'sri-lanka', initials: 'ID' },
+    { id: 'mendis', name: 'Mendis', country: 'sri-lanka', initials: 'ME' },
+    // International Brands
+    { id: 'jack-daniels', name: "Jack Daniel's", country: 'usa', initials: 'JD' },
+    { id: 'johnnie-walker', name: 'Johnnie Walker', country: 'scotland', initials: 'JW' },
+    { id: 'smirnoff', name: 'Smirnoff', country: 'russia', initials: 'SM' },
+    { id: 'bacardi', name: 'Bacardi', country: 'cuba', initials: 'BC' },
+    { id: 'absolut', name: 'Absolut', country: 'sweden', initials: 'AB' },
+    { id: 'corona', name: 'Corona', country: 'mexico', initials: 'CO' },
+    { id: 'heineken', name: 'Heineken', country: 'netherlands', initials: 'HE' },
+    { id: 'chivas', name: 'Chivas Regal', country: 'scotland', initials: 'CV' },
+    { id: 'grey-goose', name: 'Grey Goose', country: 'france', initials: 'GG' },
+    { id: 'tanqueray', name: 'Tanqueray', country: 'england', initials: 'TQ' }
+  ];
+
+  const countries = [
+    { id: 'all', name: 'All Countries', flag: '🌍' },
+    { id: 'sri-lanka', name: 'Sri Lanka', flag: '🇱🇰' },
+    { id: 'usa', name: 'USA', flag: '🇺🇸' },
+    { id: 'scotland', name: 'Scotland', flag: '🏴' },
+    { id: 'russia', name: 'Russia', flag: '🇷🇺' },
+    { id: 'cuba', name: 'Cuba', flag: '🇨🇺' },
+    { id: 'sweden', name: 'Sweden', flag: '🇸🇪' },
+    { id: 'mexico', name: 'Mexico', flag: '🇲🇽' },
+    { id: 'netherlands', name: 'Netherlands', flag: '🇳🇱' },
+    { id: 'france', name: 'France', flag: '🇫🇷' },
+    { id: 'england', name: 'England', flag: '🏴' }
+  ];
+
   // Origins
   const origins = [...new Set(products.map(p => p.origin))];
 
-  // Brands
+  // Brands from products
   const brands = [...new Set(products.map(p => p.brand))];
 
   // Filter Products
@@ -361,20 +398,40 @@ const Products = () => {
                 <Award size={16} />
                 Brands
               </label>
-              <div className="filter-options scrollable">
+              
+              {/* Brand Circles */}
+              <div className="brand-circles-grid">
+                {brandsList.map(brand => (
+                  <button
+                    key={brand.id}
+                    className={`brand-circle ${activeFilters.brand === brand.id ? 'active' : ''}`}
+                    onClick={() => setActiveFilters(prev => ({ ...prev, brand: brand.id }))}
+                    title={brand.name}
+                  >
+                    {brand.initials}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Brand List with Country Filter */}
+              <div className="filter-options scrollable" style={{ maxHeight: '280px', marginTop: '1rem' }}>
                 <button
                   className={`filter-option ${activeFilters.brand === 'all' ? 'active' : ''}`}
                   onClick={() => setActiveFilters(prev => ({ ...prev, brand: 'all' }))}
                 >
-                  All Brands
+                  <Award size={14} />
+                  <span>All Brands</span>
                 </button>
-                {brands.map(brand => (
+                {brandsList.slice(1).map(brand => (
                   <button
-                    key={brand}
-                    className={`filter-option ${activeFilters.brand === brand ? 'active' : ''}`}
-                    onClick={() => setActiveFilters(prev => ({ ...prev, brand }))}
+                    key={brand.id}
+                    className={`filter-option ${activeFilters.brand === brand.id ? 'active' : ''}`}
+                    onClick={() => setActiveFilters(prev => ({ ...prev, brand: brand.id }))}
                   >
-                    {brand}
+                    <span className="brand-flag">
+                      {countries.find(c => c.id === brand.country)?.flag || '🌍'}
+                    </span>
+                    <span>{brand.name}</span>
                   </button>
                 ))}
               </div>

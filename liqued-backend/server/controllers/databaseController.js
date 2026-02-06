@@ -99,8 +99,12 @@ const databaseController = {
     try {
       const [tables] = await db.execute('SHOW TABLES');
       const tableNames = tables.map(t => Object.values(t)[0]);
-      res.json({ tables: tableNames });
+      res.json({ 
+        success: true,
+        tables: tableNames 
+      });
     } catch (error) {
+      console.error('Get tables error:', error);
       res.status(500).json({ error: 'Failed to get tables' });
     }
   },
@@ -110,9 +114,15 @@ const databaseController = {
     try {
       const { tableName } = req.params;
       const [columns] = await db.execute(`DESCRIBE ${tableName}`);
-      res.json({ table: tableName, columns });
+      
+      res.json({
+        success: true,
+        table: tableName,
+        columns
+      });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to get table structure' });
+      console.error('Get table structure error:', error);
+      res.status(500).json({ error: 'Failed to get table structure', details: error.message });
     }
   },
 
@@ -120,11 +130,26 @@ const databaseController = {
   getTableData: async (req, res) => {
     try {
       const { tableName } = req.params;
-      const limit = req.query.limit || 100;
-      const [rows] = await db.execute(`SELECT * FROM ${tableName} LIMIT ?`, [parseInt(limit)]);
-      res.json({ table: tableName, data: rows, count: rows.length });
+      const { limit = 100, offset = 0 } = req.query;
+      
+      const [rows] = await db.execute(
+        `SELECT * FROM ${tableName} LIMIT ? OFFSET ?`,
+        [parseInt(limit), parseInt(offset)]
+      );
+      
+      const [countResult] = await db.execute(`SELECT COUNT(*) as total FROM ${tableName}`);
+      
+      res.json({
+        success: true,
+        table: tableName,
+        total: countResult[0].total,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        data: rows
+      });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to get table data' });
+      console.error('Get table data error:', error);
+      res.status(500).json({ error: 'Failed to get table data', details: error.message });
     }
   },
 
@@ -133,48 +158,50 @@ const databaseController = {
     try {
       // Insert sample categories
       await db.execute(`
-        INSERT IGNORE INTO categories (name, description) VALUES 
-        ('Electronics', 'Electronic devices and gadgets'),
-        ('Clothing', 'Apparel and fashion items'),
-        ('Home & Garden', 'Home decor and garden supplies'),
-        ('Sports', 'Sports equipment and accessories')
+        INSERT IGNORE INTO categories (id, name, description) VALUES
+        (1, 'Energy Drinks', 'High caffeine energy drinks'),
+        (2, 'Sports Drinks', 'Hydration and electrolyte drinks'),
+        (3, 'Soft Drinks', 'Carbonated beverages'),
+        (4, 'Water', 'Bottled water products')
       `);
 
       // Insert sample products
       await db.execute(`
-        INSERT IGNORE INTO products (name, description, price, category_id, stock) VALUES 
-        ('Smartphone', 'Latest model smartphone with amazing features', 699.99, 1, 50),
-        ('Laptop', 'High performance laptop for work and gaming', 1299.99, 1, 25),
-        ('T-Shirt', 'Comfortable cotton t-shirt', 29.99, 2, 100),
-        ('Running Shoes', 'Professional running shoes', 89.99, 4, 40)
+        INSERT IGNORE INTO products (name, description, price, category_id, stock) VALUES
+        ('Liqued Energy Original', 'Original flavor energy drink with natural ingredients', 2.99, 1, 100),
+        ('Liqued Energy Berry Blast', 'Mixed berry flavored energy drink', 2.99, 1, 75),
+        ('Liqued Hydrate', 'Electrolyte sports drink for optimal performance', 1.99, 2, 150),
+        ('Liqued Sparkling Water', 'Naturally flavored sparkling water', 1.49, 4, 200)
       `);
 
-      res.json({ 
-        success: true, 
-        message: 'Sample data seeded successfully' 
+      res.json({
+        success: true,
+        message: 'Sample data seeded successfully',
+        data: {
+          categories: 4,
+          products: 4
+        }
       });
     } catch (error) {
-      console.error('Seed error:', error);
+      console.error('Seed data error:', error);
       res.status(500).json({ error: 'Failed to seed data', details: error.message });
     }
   },
 
-  // Drop all tables (DANGEROUS - admin only)
+  // Reset database (drop and recreate tables)
   resetDatabase: async (req, res) => {
     try {
-      await db.execute('SET FOREIGN_KEY_CHECKS = 0');
+      // Drop tables in reverse order (to handle foreign keys)
       await db.execute('DROP TABLE IF EXISTS contact_messages');
       await db.execute('DROP TABLE IF EXISTS products');
       await db.execute('DROP TABLE IF EXISTS categories');
       await db.execute('DROP TABLE IF EXISTS users');
-      await db.execute('SET FOREIGN_KEY_CHECKS = 1');
 
-      res.json({ 
-        success: true, 
-        message: 'All tables dropped. Run /init to recreate them.' 
-      });
+      // Recreate tables
+      await databaseController.initializeDatabase(req, res);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to reset database' });
+      console.error('Reset database error:', error);
+      res.status(500).json({ error: 'Failed to reset database', details: error.message });
     }
   }
 };

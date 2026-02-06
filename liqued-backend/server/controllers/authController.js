@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const authController = {
   // Register new user
@@ -118,7 +119,13 @@ const authController = {
 
       if (username) updateData.username = username;
       if (email) {
-        // Check if email is already taken by another user
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // Check if email already exists for another user
         const existingUser = await User.findByEmail(email);
         if (existingUser && existingUser.id !== req.user.userId) {
           return res.status(400).json({ error: 'Email already in use' });
@@ -126,12 +133,18 @@ const authController = {
         updateData.email = email;
       }
 
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: 'No update data provided' });
+      }
+
       const updated = await User.updateById(req.user.userId, updateData);
-      
+
       if (updated) {
+        const user = await User.findById(req.user.userId);
         res.json({
           success: true,
-          message: 'Profile updated successfully'
+          message: 'Profile updated successfully',
+          user
         });
       } else {
         res.status(404).json({ error: 'User not found' });
@@ -157,16 +170,20 @@ const authController = {
 
       // Get user with password
       const user = await User.findByEmail(req.user.email);
-      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
       // Verify current password
       const isValidPassword = await User.comparePassword(currentPassword, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ error: 'Current password is incorrect' });
       }
 
-      // Update password
-      const bcrypt = require('bcryptjs');
+      // Hash new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update password
       await User.updateById(req.user.userId, { password: hashedPassword });
 
       res.json({
@@ -188,7 +205,7 @@ const authController = {
         users
       });
     } catch (error) {
-      console.error('Get users error:', error);
+      console.error('Get all users error:', error);
       res.status(500).json({ error: 'Server error fetching users' });
     }
   },
@@ -197,14 +214,14 @@ const authController = {
   deleteUser: async (req, res) => {
     try {
       const { id } = req.params;
-      
-      // Prevent deleting self
+
+      // Prevent admin from deleting themselves
       if (parseInt(id) === req.user.userId) {
         return res.status(400).json({ error: 'Cannot delete your own account' });
       }
 
       const deleted = await User.deleteById(id);
-      
+
       if (deleted) {
         res.json({
           success: true,
