@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/database');
+const db = require('../config/db');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 
 // 1. Get All Categories (Public - කාටත් බලන්න පුළුවන්)
 router.get('/', async (req, res) => {
     try {
         const [rows] = await db.execute('SELECT * FROM categories ORDER BY created_at DESC');
-        res.json(rows);
+        res.json({ categories: rows });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to fetch categories' });
@@ -25,11 +25,15 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
     try {
         const [result] = await db.execute(
             'INSERT INTO categories (name, description) VALUES (?, ?)',
-            [name, description]
+            [name, description || '']
         );
         res.status(201).json({ 
             message: 'Category created successfully', 
-            categoryId: result.insertId 
+            category: {
+                id: result.insertId,
+                name: name,
+                description: description || ''
+            }
         });
     } catch (err) {
         console.error(err);

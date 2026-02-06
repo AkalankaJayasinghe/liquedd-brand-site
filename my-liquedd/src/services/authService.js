@@ -12,6 +12,18 @@ class AuthService {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
+  // Safe JSON response parser
+  async parseResponse(response) {
+    const text = await response.text();
+    if (!text) return {};
+    try {
+      return JSON.parse(text);
+    } catch {
+      console.error('Server returned non-JSON response:', text.substring(0, 200));
+      throw new Error('Server error: unexpected response. Is the backend running?');
+    }
+  }
+
   // Register new user
   async register(userData) {
     try {
@@ -23,7 +35,7 @@ class AuthService {
         body: JSON.stringify(userData),
       });
 
-      const data = await response.json();
+      const data = await this.parseResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
@@ -47,7 +59,7 @@ class AuthService {
         body: JSON.stringify(credentials),
       });
 
-      const data = await response.json();
+      const data = await this.parseResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
@@ -83,7 +95,7 @@ class AuthService {
         },
       });
 
-      const data = await response.json();
+      const data = await this.parseResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch profile');
@@ -108,7 +120,7 @@ class AuthService {
         body: JSON.stringify(updateData),
       });
 
-      const data = await response.json();
+      const data = await this.parseResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to update profile');
@@ -137,7 +149,7 @@ class AuthService {
         body: JSON.stringify(passwordData),
       });
 
-      const data = await response.json();
+      const data = await this.parseResponse(response);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to change password');
@@ -166,7 +178,15 @@ class AuthService {
 
   getUser() {
     const userData = localStorage.getItem(this.userKey);
-    return userData ? JSON.parse(userData) : null;
+    if (!userData) return null;
+    
+    try {
+      return JSON.parse(userData);
+    } catch (error) {
+      console.error('Failed to parse user data:', error);
+      localStorage.removeItem(this.userKey);
+      return null;
+    }
   }
 
   // Check if user is authenticated
@@ -187,7 +207,12 @@ class AuthService {
 
     try {
       // Decode JWT token (basic decoding without verification)
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const parts = token.split('.');
+      if (parts.length !== 3) return false;
+      
+      const payload = JSON.parse(atob(parts[1]));
+      if (!payload.exp) return true; // No expiry set
+      
       const expiry = payload.exp * 1000; // Convert to milliseconds
       return Date.now() < expiry;
     } catch (error) {

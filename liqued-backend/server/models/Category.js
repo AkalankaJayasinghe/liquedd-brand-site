@@ -1,4 +1,4 @@
-const db = require('../config/database');
+const db = require('../config/db');
 
 class Category {
   static async create(categoryData) {
@@ -60,6 +60,39 @@ class Category {
       [id]
     );
     return rows[0].count;
+  }
+
+  static async findByName(name) {
+    const [rows] = await db.execute(
+      'SELECT * FROM categories WHERE name = ?',
+      [name]
+    );
+    return rows[0];
+  }
+
+  static async update(id, updateData) {
+    const { name, description } = updateData;
+    const [result] = await db.execute(
+      'UPDATE categories SET name = ?, description = ? WHERE id = ?',
+      [name, description, id]
+    );
+    return result.affectedRows;
+  }
+
+  static async delete(id) {
+    const [result] = await db.execute(
+      'DELETE FROM categories WHERE id = ?',
+      [id]
+    );
+    return result.affectedRows;
+  }
+
+  static async getProducts(id) {
+    const [rows] = await db.execute(
+      'SELECT * FROM products WHERE category_id = ?',
+      [id]
+    );
+    return rows;
   }
 }
 

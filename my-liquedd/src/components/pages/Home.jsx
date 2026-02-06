@@ -1,16 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Search, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Search, Menu, ChevronLeft, ChevronRight, Heart, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './Home.css';
 
 const Home = () => {
-  // --- HERO VIDEO & EXISTING LOGIC (No Changes) ---
+  // --- HERO VIDEO & EXISTING LOGIC ---
   const heroVideos = [
-    "https://videos.pexels.com/video-files/855078/855078-hd_1920_1080_30fps.mp4",
-    "https://videos.pexels.com/video-files/4276709/4276709-hd_1920_1080_25fps.mp4",
-    "https://videos.pexels.com/video-files/6063467/6063467-hd_1920_1080_25fps.mp4"
+    'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=1920', // Perfume bottles
+    'https://images.unsplash.com/photo-1590736969955-71cc94901144?w=1920', // Luxury perfume
+    'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=1920', // Fragrance collection
   ];
   const [currentVideo, setCurrentVideo] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [likedProducts, setLikedProducts] = useState([]);
+  const [cartCount, setCartCount] = useState(2);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const sliderRef = useRef(null); 
+  const productSliderRef = useRef(null);
+  const brandSliderRef = useRef(null);
+
+  // Video Auto Change
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentVideo((prevIndex) => (prevIndex + 1) % heroVideos.length);
@@ -18,11 +29,14 @@ const Home = () => {
     return () => clearInterval(timer);
   }, [heroVideos.length]);
 
-  const sliderRef = useRef(null); 
-  const productSliderRef = useRef(null);
-  
-  // --- 1. NEW BRAND SLIDER REF ---
-  const brandSliderRef = useRef(null);
+  // Scroll Effect for Navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Auto Slide for Cellar
   useEffect(() => {
@@ -37,7 +51,7 @@ const Home = () => {
     return () => clearInterval(autoSlideInterval);
   }, []);
 
-  // --- 2. AUTO SLIDE FOR BRANDS ---
+  // Auto Slide for Brands
   useEffect(() => {
     const brandInterval = setInterval(() => {
       if (brandSliderRef.current) {
@@ -46,10 +60,10 @@ const Home = () => {
         if (isAtEnd) {
           current.scrollTo({ left: 0, behavior: 'smooth' });
         } else {
-          current.scrollBy({ left: 200, behavior: 'smooth' }); // හෙමින් slide වෙන්න
+          current.scrollBy({ left: 200, behavior: 'smooth' });
         }
       }
-    }, 3000); // තත්පර 3කට සැරයක්
+    }, 3000);
     return () => clearInterval(brandInterval);
   }, []);
 
@@ -61,46 +75,62 @@ const Home = () => {
     }
   };
 
+  const toggleLike = (productId) => {
+    setLikedProducts(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleAddToCart = () => {
+    setCartCount(prev => prev + 1);
+    // Add cart animation trigger here
+    const cartElement = document.querySelector('.cart-wrapper');
+    cartElement.classList.add('cart-bounce');
+    setTimeout(() => cartElement.classList.remove('cart-bounce'), 600);
+  };
+
   // --- DATA ---
   const products = [
-    { id: 1, name: "William Lawsons Scotch", price: "LKR 7,700.00", image: "https://www.wineworld.lk/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/w/i/william_lawsons_750ml.jpg" },
-    { id: 2, name: "Absolut Elyx", price: "LKR 28,900.00", image: "https://www.wineworld.lk/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/a/b/absolut_elyx_750ml.jpg" },
+    { id: 1, name: "William Lawsons Scotch", price: "LKR 7,700.00", image: "https://www.wineworld.lk/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/w/i/william_lawsons_750ml.jpg", badge: "Popular" },
+    { id: 2, name: "Absolut Elyx", price: "LKR 28,900.00", image: "https://www.wineworld.lk/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/a/b/absolut_elyx_750ml.jpg", badge: "Premium" },
     { id: 3, name: "Vat 69, 750ml", price: "LKR 7,500.00", image: "https://www.wineworld.lk/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/v/a/vat_69_750ml.jpg" },
-    { id: 4, name: "Rockland Red Rum", price: "LKR 8,500.00", image: "https://rockland.lk/wp-content/uploads/2021/08/Rockland-Red-Rum-750ml.png" },
+    { id: 4, name: "Rockland Red Rum", price: "LKR 8,500.00", image: "https://rockland.lk/wp-content/uploads/2021/08/Rockland-Red-Rum-750ml.png", badge: "New" },
     { id: 5, name: "Johnnie Walker Blonde", price: "LKR 14,400.00", image: "https://www.wineworld.lk/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/j/o/johnnie_walker_blonde_750ml.jpg" },
-    { id: 6, name: "Belvedere Pure Vodka", price: "LKR 199,000.00", image: "https://cdn.shopify.com/s/files/1/0013/2477/7569/products/Belvedere-Pure_1024x1024.jpg" },
+    { id: 6, name: "Belvedere Pure Vodka", price: "LKR 199,000.00", image: "https://cdn.shopify.com/s/files/1/0013/2477/7569/products/Belvedere-Pure_1024x1024.jpg", badge: "Luxury" },
   ];
 
   const categories = [
-    { name: "Premium Arrack", image: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600" },
-    { name: "Craft Gin", image: "https://images.unsplash.com/photo-1598155523122-38423bd4d6bc?w=600" },
-    { name: "Aged Rum", image: "https://images.unsplash.com/photo-1619451427882-6aaaded0cc61?w=600" },
-    { name: "Single Malt", image: "https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=600" },
-    { name: "Fine Wine", image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600" }
+    { name: "Premium Arrack", image: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600", count: "24 Products" },
+    { name: "Craft Gin", image: "https://images.unsplash.com/photo-1598155523122-38423bd4d6bc?w=600", count: "18 Products" },
+    { name: "Aged Rum", image: "https://images.unsplash.com/photo-1619451427882-6aaaded0cc61?w=600", count: "32 Products" },
+    { name: "Single Malt", image: "https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=600", count: "41 Products" },
+    { name: "Fine Wine", image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600", count: "56 Products" }
   ];
 
-  // --- 3. BRAND DATA ---
+  // Simpler brand array with focus on text
   const brands = [
-    { id: "rockland", name: "Rockland", logo: "https://rockland.lk/wp-content/uploads/2021/04/Rockland-Logo.png" },
-    { id: "dcsl", name: "DCSL", logo: "https://upload.wikimedia.org/wikipedia/en/thumb/8/87/Distilleries_Company_of_Sri_Lanka_logo.svg/1200px-Distilleries_Company_of_Sri_Lanka_logo.svg.png" },
-    { id: "johnnie-walker", name: "Johnnie Walker", logo: "https://logos-world.net/wp-content/uploads/2020/09/Johnnie-Walker-Logo.png" },
-    { id: "absolut", name: "Absolut", logo: "https://logos-world.net/wp-content/uploads/2020/12/Absolut-Logo.png" },
-    { id: "hennessy", name: "Hennessy", logo: "https://logos-world.net/wp-content/uploads/2020/12/Hennessy-Logo.png" },
-    { id: "chivas", name: "Chivas", logo: "https://logos-world.net/wp-content/uploads/2020/12/Chivas-Regal-Logo.png" },
-    { id: "bacardi", name: "Bacardi", logo: "https://logos-world.net/wp-content/uploads/2020/12/Bacardi-Logo.png" },
-    { id: "smirnoff", name: "Smirnoff", logo: "https://logos-world.net/wp-content/uploads/2020/04/Smirnoff-Logo.png" },
-    { id: "jack-daniels", name: "Jack Daniel's", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Jack_Daniel%27s_logo.svg/1200px-Jack_Daniel%27s_logo.svg.png" },
-    { id: "grey-goose", name: "Grey Goose", logo: "https://logowik.com/content/uploads/images/grey-goose-vodka-new3122.jpg" },
-    { id: "moet-chandon", name: "Moët & Chandon", logo: "https://1000logos.net/wp-content/uploads/2020/09/Moet-Chandon-Logo.png" },
-    { id: "patron", name: "Patrón", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Patr%C3%B3n_Logo.svg/1200px-Patr%C3%B3n_Logo.svg.png" }
+    { id: "rockland", name: "ROCKLAND" },
+    { id: "dcsl", name: "DCSL" },
+    { id: "johnnie-walker", name: "JOHNNIE WALKER" },
+    { id: "absolut", name: "ABSOLUT" },
+    { id: "hennessy", name: "HENNESSY" },
+    { id: "chivas", name: "CHIVAS REGAL" },
+    { id: "bacardi", name: "BACARDÍ" },
+    { id: "smirnoff", name: "SMIRNOFF" },
+    { id: "jack-daniels", name: "JACK DANIEL'S" },
+    { id: "grey-goose", name: "GREY GOOSE" },
+    { id: "moet-chandon", name: "MOËT & CHANDON" },
+    { id: "patron", name: "PATRÓN" }
   ];
 
   return (
     <div className="home-container">
-      {/* Navbar & Hero ... (Same code) */}
-      <nav className="navbar">
+      {/* Enhanced Navbar with Scroll Effect */}
+      <nav className={`navbar ${scrolled ? 'navbar-scrolled' : ''}`}>
         <div className="nav-left">
-          <Menu className="menu-icon" />
+          <Menu className="menu-icon" onClick={() => setIsMenuOpen(!isMenuOpen)} />
           <span className="brand-year">EST. 1924</span>
         </div>
         <div className="nav-center">
@@ -110,11 +140,12 @@ const Home = () => {
           <Search className="nav-icon" />
           <div className="cart-wrapper">
             <ShoppingCart className="nav-icon" />
-            <span className="cart-count">2</span>
+            <span className="cart-count">{cartCount}</span>
           </div>
         </div>
       </nav>
 
+      {/* Hero Section with Video Progress Indicators */}
       <header className="hero-section">
         <div className="hero-video-container">
           {heroVideos.map((video, index) => (
@@ -126,7 +157,7 @@ const Home = () => {
           ))}
         </div>
         <div className="hero-overlay"></div>
-        <div className="hero-content">
+        <div className="hero-content animate-fade-in">
           <span className="hero-tagline">GUARDIAN OF THE ISLAND SPIRIT</span>
           <h2 className="hero-title">Experience the Legacy of <br/>Ceylon Arrack</h2>
           <p className="hero-desc">Handcrafted from the finest coconut flower nectar.</p>
@@ -135,8 +166,20 @@ const Home = () => {
             <Link to="/our-story" className="btn-outline">Our Heritage</Link>
           </div>
         </div>
+        
+        {/* Video Progress Indicators */}
+        <div className="video-indicators">
+          {heroVideos.map((_, index) => (
+            <div 
+              key={index} 
+              className={`indicator ${index === currentVideo ? 'active' : ''}`}
+              onClick={() => setCurrentVideo(index)}
+            />
+          ))}
+        </div>
       </header>
 
+      {/* Enhanced Categories Section */}
       <section className="categories-section">
         <div className="section-header">
           <h3>Explore Our Cellar</h3>
@@ -145,11 +188,19 @@ const Home = () => {
         <div className="slider-wrapper">
           <div className="category-slider" ref={sliderRef}>
             {categories.map((cat, index) => (
-              <div key={index} className="category-card-slide">
+              <div 
+                key={index} 
+                className={`category-card-slide ${activeCategory === index ? 'active' : ''}`}
+                onMouseEnter={() => setActiveCategory(index)}
+                onMouseLeave={() => setActiveCategory(null)}
+              >
                 <img src={cat.image} alt={cat.name} />
                 <div className="category-overlay">
+                  <span className="category-count">{cat.count}</span>
                   <h4>{cat.name}</h4>
-                  <Link to={`/shop/${cat.name.toLowerCase()}`} className="cat-link">View Range</Link>
+                  <Link to={`/shop/${cat.name.toLowerCase()}`} className="cat-link">
+                    View Range <ChevronRight size={16} />
+                  </Link>
                 </div>
               </div>
             ))}
@@ -157,60 +208,109 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Enhanced Featured Products with More Interactions */}
       <section className="featured-shop">
         <div className="shop-header-full">
           <h3>Trending Now</h3>
           <Link to="/shop" className="view-all-btn">VIEW MORE</Link>
         </div>
         <div className="product-slider-wrapper-full">
-          <button className="prod-nav-btn left" onClick={() => slideProducts('left')}><ChevronLeft size={24} /></button>
+          <button className="prod-nav-btn left" onClick={() => slideProducts('left')}>
+            <ChevronLeft size={24} />
+          </button>
           <div className="product-slider-full" ref={productSliderRef}>
             {products.map((product) => (
               <div key={product.id} className="product-card-clean">
+                {product.badge && (
+                  <span className={`product-badge ${product.badge.toLowerCase()}`}>
+                    {product.badge}
+                  </span>
+                )}
                 <div className="product-img-wrap">
                   <img src={product.image} alt={product.name} />
+                  <div className="product-actions-overlay">
+                    <button 
+                      className={`action-btn ${likedProducts.includes(product.id) ? 'liked' : ''}`}
+                      onClick={() => toggleLike(product.id)}
+                      title="Add to wishlist"
+                    >
+                      <Heart size={20} fill={likedProducts.includes(product.id) ? 'currentColor' : 'none'} />
+                    </button>
+                    <Link to={`/product/${product.id}`} className="action-btn" title="Quick view">
+                      <Eye size={20} />
+                    </Link>
+                  </div>
                 </div>
                 <div className="product-details-clean">
                   <h4 className="prod-title">{product.name}</h4>
                   <p className="prod-price">{product.price}</p>
-                  <Link to={`/product/${product.id}`} className="btn-view-only">View</Link>
+                  <div className="product-buttons">
+                    <Link to={`/product/${product.id}`} className="btn-view-only">View Details</Link>
+                    <button 
+                      className="btn-add-cart"
+                      onClick={() => handleAddToCart(product.id)}
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-          <button className="prod-nav-btn right" onClick={() => slideProducts('right')}><ChevronRight size={24} /></button>
+          <button className="prod-nav-btn right" onClick={() => slideProducts('right')}>
+            <ChevronRight size={24} />
+          </button>
         </div>
       </section>
 
+      {/* Enhanced Heritage Section with Parallax Effect */}
       <section className="heritage-teaser">
         <div className="heritage-content">
           <div className="heritage-text">
             <span className="sub-heading">SINCE 1924</span>
             <h2>The Art of Distillation</h2>
-            <p>In the heart of Sri Lanka, we continue a tradition that began over four generations ago.</p>
-            <Link to="/about" className="link-underline">Discover Our Story</Link>
+            <p>In the heart of Sri Lanka, we continue a tradition that began over four generations ago. Every bottle tells a story of craftsmanship, dedication, and the perfect blend of tradition and innovation.</p>
+            <Link to="/about" className="link-underline">Discover Our Story →</Link>
           </div>
           <div className="heritage-img-box">
-             <div className="img-frame"><img src="https://images.unsplash.com/photo-1597075687490-8f673c6c17f6?w=600" alt="Old Distillery" /></div>
+            <div className="img-frame">
+              <img src="https://images.unsplash.com/photo-1597075687490-8f673c6c17f6?w=600" alt="Old Distillery" />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* --- 4. NEW BRANDS SECTION --- */}
+      {/* Enhanced Brand Section */}
       <section className="brand-section">
         <div className="brand-header">
-            <h3>Our Premium Partners</h3>
+          <h3>Our Premium Partners</h3>
+          <p className="brand-subtext">Curated selection from the world's finest distilleries</p>
         </div>
-        <div className="brand-slider" ref={brandSliderRef}>
-            {brands.map((brand) => (
-                // Click කළාම /brands/rockland වගේ තැනකට යන්න Link එකක් දැම්මා
-                <Link to={`/brands/${brand.id}`} key={brand.id} className="brand-item">
-                    <img src={brand.logo} alt={brand.name} />
-                </Link>
-            ))}
+        <div className="brand-slider-text" ref={brandSliderRef}>
+          {brands.map((brand) => (
+            <Link to={`/brands/${brand.id}`} key={brand.id} className="brand-text-item">
+              <span>{brand.name}</span>
+            </Link>
+          ))}
         </div>
       </section>
 
+      {/* New Newsletter Section */}
+      <section className="newsletter-section">
+        <div className="newsletter-content">
+          <h3>Join Our Exclusive Circle</h3>
+          <p>Be the first to know about new arrivals, special offers, and exclusive events.</p>
+          <form className="newsletter-form" onSubmit={(e) => e.preventDefault()}>
+            <input 
+              type="email" 
+              placeholder="Enter your email address" 
+              className="newsletter-input"
+              required
+            />
+            <button type="submit" className="newsletter-btn">Subscribe</button>
+          </form>
+        </div>
+      </section>
     </div>
   );
 };

@@ -34,13 +34,26 @@ class ApiService {
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      // Return response based on content type
+      // Get response text first
+      const text = await response.text();
+      
+      // If empty response, return null
+      if (!text) {
+        return null;
+      }
+
+      // Try to parse as JSON
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        return await response.json();
+        try {
+          return JSON.parse(text);
+        } catch (error) {
+          console.error('Failed to parse JSON response:', text);
+          throw new Error('Invalid JSON response from server');
+        }
       }
       
-      return await response.text();
+      return text;
     } catch (error) {
       console.error(`API request failed for ${endpoint}:`, error);
       throw error;
@@ -50,8 +63,25 @@ class ApiService {
   // Handle API errors
   async handleError(response) {
     try {
-      const errorData = await response.json();
-      return errorData;
+      const text = await response.text();
+      if (!text) {
+        return {
+          message: `Request failed with status ${response.status}`,
+          status: response.status
+        };
+      }
+      
+      // Try to parse as JSON
+      try {
+        const errorData = JSON.parse(text);
+        return errorData;
+      } catch {
+        // If not JSON, return text as message
+        return {
+          message: text || `Request failed with status ${response.status}`,
+          status: response.status
+        };
+      }
     } catch {
       return {
         message: `Request failed with status ${response.status}`,

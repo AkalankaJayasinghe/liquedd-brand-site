@@ -38,7 +38,7 @@ const productController = {
   // Create new product
   createProduct: async (req, res) => {
     try {
-      const { name, description, price, category_id, stock } = req.body;
+      const { name, description, price, category_id, stock, brand } = req.body;
       const image_url = req.file ? `/uploads/${req.file.filename}` : null;
 
       // Validate required fields
@@ -52,7 +52,8 @@ const productController = {
         price,
         category_id,
         image_url,
-        stock: stock || 0
+        stock: stock || 0,
+        brand: brand || null
       });
 
       res.status(201).json({
@@ -69,7 +70,7 @@ const productController = {
   updateProduct: async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, description, price, category_id, stock } = req.body;
+      const { name, description, price, category_id, stock, brand } = req.body;
       const updateData = {};
 
       if (name) updateData.name = name;
@@ -77,6 +78,7 @@ const productController = {
       if (price) updateData.price = price;
       if (category_id) updateData.category_id = category_id;
       if (stock !== undefined) updateData.stock = stock;
+      if (brand !== undefined) updateData.brand = brand;
       if (req.file) updateData.image_url = `/uploads/${req.file.filename}`;
 
       const updated = await Product.updateById(id, updateData);

@@ -11,6 +11,7 @@ const ProductManagement = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -18,8 +19,11 @@ const ProductManagement = () => {
     price: '',
     category_id: '',
     stock: '',
+    brand: '',
     image: null
   });
+  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+  const [imagePreview, setImagePreview] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -55,7 +59,37 @@ const ProductManagement = () => {
   };
 
   const handleFileChange = (e) => {
-    setFormData(prev => ({ ...prev, image: e.target.files[0] }));
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({ ...prev, image: file }));
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Create new category
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!newCategory.name.trim()) {
+      setError('Category name is required');
+      return;
+    }
+
+    try {
+      await categoryService.createCategory(newCategory);
+      setSuccess('Category created successfully!');
+      setShowCategoryModal(false);
+      setNewCategory({ name: '', description: '' });
+      fetchData(); // Refresh categories
+    } catch (err) {
+      setError(err.message || 'Failed to create category');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -87,8 +121,10 @@ const ProductManagement = () => {
       price: product.price,
       category_id: product.category_id,
       stock: product.stock || 0,
+      brand: product.brand || '',
       image: null
     });
+    setImagePreview(product.image_url || null);
     setShowModal(true);
   };
 
@@ -114,14 +150,17 @@ const ProductManagement = () => {
       price: '',
       category_id: '',
       stock: '',
+      brand: '',
       image: null
     });
+    setImagePreview(null);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingProduct(null);
+    setImagePreview(null);
     setError('');
   };
 
@@ -160,8 +199,9 @@ const ProductManagement = () => {
             <tr>
               <th>Image</th>
               <th>Name</th>
+              <th>Brand</th>
               <th>Category</th>
-              <th>Price</th>
+              <th>Price (LKR)</th>
               <th>Stock</th>
               <th>Actions</th>
             </tr>
@@ -169,7 +209,7 @@ const ProductManagement = () => {
           <tbody>
             {products.length === 0 ? (
               <tr>
-                <td colSpan="6" className="no-data">
+                <td colSpan="7" className="no-data">
                   No products found. Add your first product!
                 </td>
               </tr>
@@ -179,17 +219,18 @@ const ProductManagement = () => {
                   <td>
                     {product.image_url ? (
                       <img 
-                        src={product.image_url} 
+                        src={product.image_url.startsWith('http') ? product.image_url : `http://localhost:5000${product.image_url}`} 
                         alt={product.name}
                         className="product-thumbnail"
                       />
                     ) : (
-                      <div className="no-image">No image</div>
+                      <div className="no-image">{product.name.charAt(0)}</div>
                     )}
                   </td>
                   <td className="product-name">{product.name}</td>
+                  <td>{product.brand || '-'}</td>
                   <td>{product.category_name || 'Uncategorized'}</td>
-                  <td className="product-price">${parseFloat(product.price).toFixed(2)}</td>
+                  <td className="product-price">LKR {parseFloat(product.price).toLocaleString()}</td>
                   <td>{product.stock || 0}</td>
                   <td className="actions">
                     <button 
@@ -234,6 +275,17 @@ const ProductManagement = () => {
               </div>
 
               <div className="form-group">
+                <label>Brand</label>
+                <input
+                  type="text"
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleInputChange}
+                  placeholder="Enter brand name (e.g., Johnnie Walker)"
+                />
+              </div>
+
+              <div className="form-group">
                 <label>Description</label>
                 <textarea
                   name="description"
@@ -246,7 +298,7 @@ const ProductManagement = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Price *</label>
+                  <label>Price (LKR) *</label>
                   <input
                     type="number"
                     name="price"
@@ -274,30 +326,67 @@ const ProductManagement = () => {
 
               <div className="form-group">
                 <label>Category *</label>
-                <select
-                  name="category_id"
-                  value={formData.category_id}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select a category</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="category-select-row">
+                  <select
+                    name="category_id"
+                    value={formData.category_id}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button 
+                    type="button" 
+                    className="btn-add-category"
+                    onClick={() => setShowCategoryModal(true)}
+                  >
+                    + New
+                  </button>
+                </div>
               </div>
 
               <div className="form-group">
                 <label>Product Image</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-                <small>Supported formats: JPG, PNG, GIF, WebP (Max 5MB)</small>
+                <div className="image-upload-area">
+                  {imagePreview || (editingProduct && editingProduct.image_url) ? (
+                    <div className="image-preview">
+                      <img 
+                        src={imagePreview || editingProduct.image_url} 
+                        alt="Preview" 
+                      />
+                      <button 
+                        type="button" 
+                        className="remove-image"
+                        onClick={() => {
+                          setImagePreview(null);
+                          setFormData(prev => ({ ...prev, image: null }));
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="upload-placeholder">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={handleFileChange}
+                        style={{ display: 'none' }}
+                      />
+                      <span className="upload-icon">📷</span>
+                      <span>Click to upload image</span>
+                      <small>JPG, PNG, GIF, WebP (Max 5MB)</small>
+                    </label>
+                  )}
+                </div>
               </div>
+
+              {error && <div className="form-error">{error}</div>}
 
               <div className="form-actions">
                 <button type="button" onClick={closeModal} className="btn-cancel">
@@ -305,6 +394,50 @@ const ProductManagement = () => {
                 </button>
                 <button type="submit" className="btn-submit">
                   {editingProduct ? 'Update Product' : 'Create Product'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Category Creation Modal */}
+      {showCategoryModal && (
+        <div className="modal-overlay" onClick={() => setShowCategoryModal(false)}>
+          <div className="modal modal-small" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Create New Category</h2>
+              <button onClick={() => setShowCategoryModal(false)} className="close-button">×</button>
+            </div>
+            
+            <form onSubmit={handleCreateCategory} className="product-form">
+              <div className="form-group">
+                <label>Category Name *</label>
+                <input
+                  type="text"
+                  value={newCategory.name}
+                  onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  placeholder="e.g., Whisky, Vodka, Rum"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  value={newCategory.description}
+                  onChange={(e) => setNewCategory(prev => ({ ...prev, description: e.target.value }))}
+                  rows="3"
+                  placeholder="Category description (optional)"
+                />
+              </div>
+              
+              <div className="form-actions">
+                <button type="button" onClick={() => setShowCategoryModal(false)} className="btn-cancel">
+                  Cancel
+                </button>
+                <button type="submit" className="btn-submit">
+                  Create Category
                 </button>
               </div>
             </form>

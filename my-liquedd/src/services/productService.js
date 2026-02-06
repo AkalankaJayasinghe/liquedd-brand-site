@@ -99,6 +99,9 @@ class ProductService {
       formData.append('price', productData.price);
       formData.append('category_id', productData.category_id);
       formData.append('stock', productData.stock || 0);
+      if (productData.brand) {
+        formData.append('brand', productData.brand);
+      }
       
       if (productData.image) {
         formData.append('image', productData.image);
@@ -136,6 +139,7 @@ class ProductService {
       if (productData.price) formData.append('price', productData.price);
       if (productData.category_id) formData.append('category_id', productData.category_id);
       if (productData.stock !== undefined) formData.append('stock', productData.stock);
+      if (productData.brand) formData.append('brand', productData.brand);
       if (productData.image) formData.append('image', productData.image);
 
       const response = await fetch(`${this.baseURL}/${id}`, {
